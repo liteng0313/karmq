@@ -1,0 +1,14 @@
+{
+  "kafka_mq": {
+    "host": "localhost",
+    "port": 9999
+  },
+  "rabbit_mq": {
+    "host": "localhost",
+    "port": 9998
+  },
+  "active_mq": {
+    "host": "localhost",
+    "port": 9997
+  }
+}
