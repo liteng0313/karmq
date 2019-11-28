@@ -22,18 +22,24 @@ const (
 	// rabbit mq
 	ErrRabbitChannel  			ErrCode = 42001
 	ErrRabbitQueueDeclare		ErrCode = 42002
+
+	// kafka
+	ErrNewProducerFromClient	ErrCode = 43001
+	ErrNewConsumerFromClient	ErrCode = 43002
 )
 
 var ErrMap = map[ErrCode]string{
-	Error:					"Error",
-	Success:				"Success",
-	ErrConnection:			"Connection Error",
-	ErrSend:				"Send Msg Error",
-	ErrReceive:				"Receive Msg Error",
-	ErrDisconnection:		"Disconnection Error",
+	Error:						"Error",
+	Success:					"Success",
+	ErrConnection:				"Connection Error",
+	ErrSend:					"Send Msg Error",
+	ErrReceive:					"Receive Msg Error",
+	ErrDisconnection:			"Disconnection Error",
 
-	ErrRabbitChannel:		"Rabbit Channel Error",
-	ErrRabbitQueueDeclare: 	"Rabbit Queue Declare",
+	ErrRabbitChannel:			"Rabbit Channel Error",
+	ErrRabbitQueueDeclare: 		"Rabbit Queue Declare Error",
+	ErrNewProducerFromClient:	"New Producer From Client Error",
+	ErrNewConsumerFromClient:	"New Consumer From Client Error",
 }
 
 func (code ErrCode) Error() string {

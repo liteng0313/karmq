@@ -8,6 +8,7 @@
 package types
 
 import (
+	"fmt"
 	"github.com/Shopify/sarama"
 	"karmq/config"
 	"karmq/errors"
@@ -44,11 +45,46 @@ func (k *Kafka) Connect() error {
 }
 
 func (k *Kafka) Send(msg []byte) error {
-	panic("implement me")
+	syncProducer, err := sarama.NewSyncProducerFromClient(k.Client)
+	if err != nil {
+		return errors.ErrNewProducerFromClient.ToError(err)
+	}
+	defer syncProducer.Close()
+
+	proMsg := &sarama.ProducerMessage{
+		Topic:"kafka",
+		Key: sarama.StringEncoder("key"),
+	}
+
+	proMsg.Value = sarama.ByteEncoder(msg)
+
+	partition, offset, err := syncProducer.SendMessage(proMsg)
+	if err != nil {
+		return errors.ErrSend.ToError(err)
+	}
+
+	fmt.Println("partition: ", partition, "offset: ", offset)
+
+	return nil
 }
 
-func (k *Kafka) Receive() error {
-	panic("implement me")
+func (k *Kafka) Receive() ([]byte, error) {
+	consumer, err := sarama.NewConsumerFromClient(k.Client)
+	if err != nil {
+		return nil, errors.ErrNewConsumerFromClient.ToError(err)
+	}
+	defer consumer.Close()
+
+	partitionConsumer, err := consumer.ConsumePartition("kafka", 0, sarama.OffsetOldest)
+	if err != nil {
+		return nil, errors.ErrReceive.ToError(err)
+	}
+
+	defer partitionConsumer.Close()
+
+	msg := <- partitionConsumer.Messages()
+
+	return msg.Value, nil
 }
 
 func (k *Kafka) Disconnect() error {
@@ -61,6 +97,15 @@ func (k *Kafka) Disconnect() error {
 }
 
 func (k* Kafka) genConfig() *sarama.Config {
-	return &sarama.Config{}
+
+	cfg := new(sarama.Config)
+	cfg.Producer.RequiredAcks = sarama.WaitForAll
+	cfg.Producer.Partitioner = sarama.NewRandomPartitioner
+	cfg.Producer.Return.Successes = true
+
+	cfg.Consumer.Return.Errors = true
+	cfg.Version = sarama.V0_11_0_2
+
+	return cfg
 }
 
