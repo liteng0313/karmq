@@ -65,8 +65,13 @@ func (k *Karmq) Connect(url string) error {
 	return k.Middleware.Connect(url)
 }
 
-func (k *Karmq) GenerateProducer() (design.Producer, error) {
-	err := k.Middleware.CreateProducer()
+func (k *Karmq) GenerateProducer(name string) (design.Producer, error) {
+
+	if name == "" {
+		return nil, ke.ErrProducerNameEmpty
+	}
+
+	err := k.Middleware.CreateProducer(name)
 	if err != nil {
 		return nil, err
 	}
@@ -74,8 +79,13 @@ func (k *Karmq) GenerateProducer() (design.Producer, error) {
 	return k.Middleware, nil
 }
 
-func (k *Karmq) GenerateConsumer() (design.Consumer, error) {
-	err := k.Middleware.CreateConsumer()
+func (k *Karmq) GenerateConsumer(name string) (design.Consumer, error) {
+
+	if name == "" {
+		return nil, ke.ErrConsumerNameEmpty
+	}
+
+	err := k.Middleware.CreateConsumer(name)
 	if err != nil {
 		return nil, err
 	}

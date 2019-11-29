@@ -12,14 +12,16 @@ import "fmt"
 type ErrCode int
 
 const (
-	Error            ErrCode = -1
-	Success          ErrCode = 0
-	ErrConnection    ErrCode = 41001
-	ErrSend          ErrCode = 41002
-	ErrReceive       ErrCode = 41003
-	ErrDisconnection ErrCode = 41004
-	ErrInvalidType   ErrCode = 41005
-	ErrConfiguration ErrCode = 41006
+	Error                ErrCode = -1
+	Success              ErrCode = 0
+	ErrConnection        ErrCode = 41001
+	ErrSend              ErrCode = 41002
+	ErrReceive           ErrCode = 41003
+	ErrDisconnection     ErrCode = 41004
+	ErrInvalidType       ErrCode = 41005
+	ErrConfiguration     ErrCode = 41006
+	ErrProducerNameEmpty ErrCode = 41007
+	ErrConsumerNameEmpty ErrCode = 41008
 
 	// rabbit mq
 	ErrRabbitChannel      ErrCode = 42001
@@ -38,14 +40,17 @@ const (
 )
 
 var ErrMap = map[ErrCode]string{
-	Error:            "Error",
-	Success:          "Success",
-	ErrConnection:    "Connection Error",
-	ErrSend:          "Send Msg Error",
-	ErrReceive:       "Receive Msg Error",
-	ErrDisconnection: "Disconnection Error",
-	ErrInvalidType:   "Invalid Type",
-	ErrConfiguration: "Configuration Error",
+	Error:   "Error",
+	Success: "Success",
+
+	ErrConnection:        "Connection Error",
+	ErrSend:              "Send Msg Error",
+	ErrReceive:           "Receive Msg Error",
+	ErrDisconnection:     "Disconnection Error",
+	ErrInvalidType:       "Invalid Type",
+	ErrConfiguration:     "Configuration Error",
+	ErrProducerNameEmpty: "Producer Name Empty",
+	ErrConsumerNameEmpty: "Consumer Name Empty",
 
 	ErrRabbitChannel:      "RabbitMQ Channel Error",
 	ErrRabbitQueueDeclare: "RabbitMQ Queue Declare Error",

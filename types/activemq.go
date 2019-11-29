@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/go-stomp/stomp"
 	"karmq/config"
+	"karmq/design"
 	"karmq/errors"
 	"net"
 	"strconv"
@@ -19,6 +20,7 @@ import (
 const MQ_ACTIVE = "active_mq"
 
 type ActiveMQ struct {
+	design.Base
 	Config       *config.ActiveConfig
 	Connection   *stomp.Conn
 	Subscription *stomp.Subscription
@@ -49,12 +51,14 @@ func (am *ActiveMQ) Connect(url string) error {
 	return nil
 }
 
-func (am *ActiveMQ) CreateProducer() error {
+func (am *ActiveMQ) CreateProducer(name string) error {
+	am.ProducerName = name
 	return nil
 }
 
-func (am *ActiveMQ) CreateConsumer() error {
-	sub, err := am.Connection.Subscribe("active", stomp.AckAuto)
+func (am *ActiveMQ) CreateConsumer(name string) error {
+	am.ConsumerName = name
+	sub, err := am.Connection.Subscribe(am.ConsumerName, stomp.AckAuto)
 	if err != nil {
 		return errors.ErrReceive.ToError(err)
 	}
@@ -65,7 +69,7 @@ func (am *ActiveMQ) CreateConsumer() error {
 }
 
 func (am *ActiveMQ) Send(msg []byte) error {
-	err := am.Connection.Send("active", "text/plain", msg)
+	err := am.Connection.Send(am.ProducerName, "text/plain", msg)
 	if err != nil {
 		return errors.ErrReceive.ToError(err)
 	}

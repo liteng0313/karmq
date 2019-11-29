@@ -8,19 +8,21 @@
 package types
 
 import (
-	"fmt"
 	"github.com/Shopify/sarama"
+	"karmq/common"
 	"karmq/config"
+	"karmq/design"
 	"karmq/errors"
-	"net"
 	"strconv"
 )
 
 const MQ_KAFKA = "kafka_mq"
 
 type Kafka struct {
-	Config            *config.KafkaConfig
+	design.Base
 	Client            sarama.Client
+	Url               string
+	Config            *config.KafkaConfig
 	AsyncProducer     sarama.AsyncProducer
 	Consumer          sarama.Consumer
 	PartitionConsumer sarama.PartitionConsumer
@@ -36,22 +38,25 @@ func (k *Kafka) InitConfig(config *config.Configuration) {
 
 func (k *Kafka) Connect(url string) error {
 	if url == "" {
-		url = net.JoinHostPort(k.Config.Host, strconv.Itoa(k.Config.Port))
+		url = common.JoinHostPort(k.Config.Host, strconv.Itoa(k.Config.Port))
 	}
-	fmt.Println("kafka url: ", url)
+	k.Url = url
+
 	cfg := k.genConfig()
+
 	client, err := sarama.NewClient([]string{url}, cfg)
 	if err != nil {
 		return errors.ErrConnection.ToError(err)
 	}
 
 	k.Client = client
-
 	return nil
 
 }
 
-func (k *Kafka) CreateProducer() error {
+func (k *Kafka) CreateProducer(name string) error {
+
+	k.ProducerName = name
 	asyncProducer, err := sarama.NewAsyncProducerFromClient(k.Client)
 	if err != nil {
 		return errors.ErrNewProducerFromClient.ToError(err)
@@ -61,15 +66,17 @@ func (k *Kafka) CreateProducer() error {
 	return nil
 }
 
-func (k *Kafka) CreateConsumer() error {
+func (k *Kafka) CreateConsumer(name string) error {
+
+	k.ConsumerName = name
+
 	consumer, err := sarama.NewConsumerFromClient(k.Client)
 	if err != nil {
-		return errors.ErrNewConsumerFromClient.ToError(err)
+		return errors.ErrConnection.ToError(err)
 	}
 
 	k.Consumer = consumer
-
-	partitionConsumer, err := k.Consumer.ConsumePartition("kafka", 0, sarama.OffsetNewest)
+	partitionConsumer, err := k.Consumer.ConsumePartition(k.ConsumerName, 0, sarama.OffsetNewest)
 	if err != nil {
 		return errors.ErrReceive.ToError(err)
 	}
@@ -82,13 +89,21 @@ func (k *Kafka) CreateConsumer() error {
 func (k *Kafka) Send(msg []byte) error {
 
 	proMsg := &sarama.ProducerMessage{
-		Topic: "kafka",
+		Topic: k.ProducerName,
 		Key:   sarama.StringEncoder("key"),
 	}
 
 	proMsg.Value = sarama.ByteEncoder(msg)
 
 	k.AsyncProducer.Input() <- proMsg
+
+	//select {
+	//case <-k.AsyncProducer.Successes():
+	//	fmt.Println("send msg on success")
+	//case err := <-k.AsyncProducer.Errors():
+	//	fmt.Println("send msg on error", err)
+	//}
+
 	//_, _, err := k.AsyncProducer.SendMessage(proMsg)
 	//if err != nil {
 	//	return errors.ErrSend.ToError(err)
@@ -102,10 +117,16 @@ func (k *Kafka) Send(msg []byte) error {
 func (k *Kafka) Receive() ([]byte, error) {
 
 	msg := <-k.PartitionConsumer.Messages()
+	//err := <-k.PartitionConsumer.Errors()
 	return msg.Value, nil
 }
 
 func (k *Kafka) Disconnect() error {
+
+	err := k.Client.Close()
+	if err != nil {
+		return errors.ErrDisconnection.ToError(err)
+	}
 
 	if k.AsyncProducer != nil {
 		err := k.AsyncProducer.Close()
@@ -128,11 +149,6 @@ func (k *Kafka) Disconnect() error {
 		}
 	}
 
-	err := k.Client.Close()
-	if err != nil {
-		return errors.ErrDisconnection.ToError(err)
-	}
-
 	return nil
 }
 
@@ -140,12 +156,10 @@ func (k *Kafka) genConfig() *sarama.Config {
 
 	cfg := sarama.NewConfig()
 
-	//cfg.Net.MaxOpenRequests = 10
-
 	cfg.Producer.RequiredAcks = sarama.WaitForAll
 	cfg.Producer.Partitioner = sarama.NewRandomPartitioner
-	cfg.Producer.Return.Successes = true
-
+	//cfg.Producer.Return.Successes = true
+	//cfg.Producer.Return.Errors = true
 	cfg.Consumer.Return.Errors = true
 	cfg.Version = sarama.V0_11_0_2
 

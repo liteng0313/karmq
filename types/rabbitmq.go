@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/streadway/amqp"
 	"karmq/config"
+	"karmq/design"
 	"karmq/errors"
 	"strconv"
 )
@@ -18,9 +19,9 @@ import (
 const MQ_RABBIT = "rabbit_mq"
 
 type RabbitMQ struct {
+	design.Base
 	Config          *config.RabbitConfig
 	Connection      *amqp.Connection
-	Queue           *amqp.Queue
 	ProducerChannel *amqp.Channel
 	ConsumerChannel *amqp.Channel
 	Delivery        <-chan amqp.Delivery
@@ -35,7 +36,6 @@ func (rm *RabbitMQ) InitConfig(config *config.Configuration) {
 }
 
 func (rm *RabbitMQ) Connect(url string) error {
-	fmt.Println(rm.Config)
 	if url == "" {
 		fmt.Printf("%s:%d\n", rm.Config.Host, rm.Config.Port)
 		//url = net.JoinHostPort(rm.Config.Host, strconv.Itoa(rm.Config.Port))
@@ -52,18 +52,54 @@ func (rm *RabbitMQ) Connect(url string) error {
 	return nil
 }
 
-func (rm *RabbitMQ) CreateProducer() error {
-	return rm.createChannel(true)
-}
+func (rm *RabbitMQ) CreateProducer(name string) error {
+	rm.ProducerName = name
 
-func (rm *RabbitMQ) CreateConsumer() error {
-	err := rm.createChannel(false)
+	channel, err := rm.Connection.Channel()
 	if err != nil {
-		return err
+		return errors.ErrRabbitChannel.ToError(err)
 	}
 
+	_, err = channel.QueueDeclare(
+		rm.ProducerName,
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return errors.ErrRabbitQueueDeclare.ToError(err)
+	}
+	rm.ProducerChannel = channel
+
+	return nil
+	//return rm.createChannel(true)
+}
+
+func (rm *RabbitMQ) CreateConsumer(name string) error {
+	rm.ConsumerName = name
+
+	channel, err := rm.Connection.Channel()
+	if err != nil {
+		return errors.ErrRabbitChannel.ToError(err)
+	}
+
+	_, err = channel.QueueDeclare(
+		rm.ConsumerName,
+		false,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return errors.ErrRabbitQueueDeclare.ToError(err)
+	}
+
+	rm.ConsumerChannel = channel
 	msgs, err := rm.ConsumerChannel.Consume(
-		rm.Queue.Name,
+		rm.ConsumerName,
 		"",
 		true,
 		false,
@@ -85,7 +121,7 @@ func (rm *RabbitMQ) Send(msg []byte) error {
 
 	err := rm.ProducerChannel.Publish(
 		"",
-		rm.Queue.Name,
+		rm.ProducerName,
 		false,
 		false,
 		amqp.Publishing{
@@ -117,30 +153,26 @@ func (rm *RabbitMQ) Disconnect() error {
 }
 
 func (rm *RabbitMQ) createChannel(isProducer bool) error {
-	channel, err := rm.Connection.Channel()
-	if err != nil {
-		return errors.ErrRabbitChannel.ToError(err)
-	}
 
-	queue, err := channel.QueueDeclare(
-		"rabbit",
-		false,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		return errors.ErrRabbitQueueDeclare.ToError(err)
-	}
+	//queue, err := channel.QueueDeclare(
+	//	rm.ProducerName,
+	//	false,
+	//	false,
+	//	false,
+	//	false,
+	//	nil,
+	//)
+	//if err != nil {
+	//	return errors.ErrRabbitQueueDeclare.ToError(err)
+	//}
+	//
+	//rm.Queue = &queue
 
-	rm.Queue = &queue
-
-	if isProducer {
-		rm.ProducerChannel = channel
-	} else {
-		rm.ConsumerChannel = channel
-	}
+	//if isProducer {
+	//	rm.ProducerChannel = channel
+	//} else {
+	//	rm.ConsumerChannel = channel
+	//}
 
 	return nil
 }

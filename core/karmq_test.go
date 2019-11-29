@@ -19,8 +19,11 @@ const URL_RABBIT = "amqp://guest:guest@localhost:5672"
 const URL_ACTIVE = "localhost:60000"
 const URL_KAFKA = "localhost:9092"
 
-var category = types.MQ_RABBIT
-var url = URL_RABBIT
+const PC_NAME = "kafka"
+const PC_NAME2 = "hello2"
+
+var category = types.MQ_KAFKA
+var url = ""
 
 func TestNewKarmq(t *testing.T) {
 
@@ -43,6 +46,15 @@ func TestNewKarmq(t *testing.T) {
 		}
 	}
 
+}
+
+func TestKarmq_Connect(t *testing.T) {
+
+	karmq, _ := NewKarmq(category)
+	err := karmq.Connect(url)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestKarmq_DisConnect(t *testing.T) {
@@ -72,7 +84,7 @@ func TestKarmq_GenerateProducer(t *testing.T) {
 	}
 	defer karmq.DisConnect()
 
-	producer, err := karmq.GenerateProducer()
+	producer, err := karmq.GenerateProducer(PC_NAME)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -89,7 +101,7 @@ func TestKarmq_GenerateConsumer(t *testing.T) {
 	}
 	defer karmq.DisConnect()
 
-	consumer, err := karmq.GenerateConsumer()
+	consumer, err := karmq.GenerateConsumer(PC_NAME)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +118,7 @@ func TestKarmq_Send(t *testing.T) {
 
 	defer karmq.DisConnect()
 
-	producer, err := karmq.GenerateProducer()
+	producer, err := karmq.GenerateProducer(PC_NAME)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -130,7 +142,7 @@ func TestKarmq_Receive(t *testing.T) {
 	}
 	defer karmq.DisConnect()
 
-	consumer, err := karmq.GenerateConsumer()
+	consumer, err := karmq.GenerateConsumer(PC_NAME)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +166,7 @@ func TestKarmq_Async_Receive(t *testing.T) {
 	}
 	defer karmq.DisConnect()
 
-	consumer, err := karmq.GenerateConsumer()
+	consumer, err := karmq.GenerateConsumer(PC_NAME)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,11 +194,11 @@ func TestKarmq_Send_Receive(t *testing.T) {
 	}
 	defer karmq.DisConnect()
 
-	producer, err := karmq.GenerateProducer()
+	producer, err := karmq.GenerateProducer(PC_NAME)
 	if err != nil {
 		t.Fatal(err)
 	}
-	consumer, err := karmq.GenerateConsumer()
+	consumer, err := karmq.GenerateConsumer(PC_NAME)
 	if err != nil {
 		t.Fatal(err)
 	}
