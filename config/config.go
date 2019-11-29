@@ -13,12 +13,7 @@ import (
 )
 
 const (
-	MQ_KAFKA = "kafka_mq"
-	MQ_RABBIT = "rabbit_mq"
-	MQ_ACTIVE = "active_mq"
-
 	CONFIG_FILE_PATH = "../config.json"
-
 )
 
 type CommonConfig struct {

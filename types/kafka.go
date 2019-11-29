@@ -1,5 +1,5 @@
 /**
- * @Description: 
+ * @Description:
  * @Version: 1.0.0
  * @Author: liteng
  * @Date: 2019-11-27 17:04
@@ -16,22 +16,29 @@ import (
 	"strconv"
 )
 
-
+const MQ_KAFKA = "kafka_mq"
 
 type Kafka struct {
-	Config *config.KafkaConfig
-	Client sarama.Client
-	SyncProducer sarama.SyncProducer
-	AsyncProducer sarama.AsyncProducer
-	Consumer sarama.Consumer
+	Config            *config.KafkaConfig
+	Client            sarama.Client
+	AsyncProducer     sarama.AsyncProducer
+	Consumer          sarama.Consumer
+	PartitionConsumer sarama.PartitionConsumer
 }
 
-func (k *Kafka) InitConfig(config *config.Configuration){
+func NewKafka() *Kafka {
+	return &Kafka{}
+}
+
+func (k *Kafka) InitConfig(config *config.Configuration) {
 	k.Config = &config.KafkaConfig
 }
 
-func (k *Kafka) Connect() error {
-	url := net.JoinHostPort(k.Config.Host, strconv.Itoa(k.Config.Port))
+func (k *Kafka) Connect(url string) error {
+	if url == "" {
+		url = net.JoinHostPort(k.Config.Host, strconv.Itoa(k.Config.Port))
+	}
+	fmt.Println("kafka url: ", url)
 	cfg := k.genConfig()
 	client, err := sarama.NewClient([]string{url}, cfg)
 	if err != nil {
@@ -44,50 +51,83 @@ func (k *Kafka) Connect() error {
 
 }
 
-func (k *Kafka) Send(msg []byte) error {
-	syncProducer, err := sarama.NewSyncProducerFromClient(k.Client)
+func (k *Kafka) CreateProducer() error {
+	asyncProducer, err := sarama.NewAsyncProducerFromClient(k.Client)
 	if err != nil {
 		return errors.ErrNewProducerFromClient.ToError(err)
 	}
-	defer syncProducer.Close()
+	k.AsyncProducer = asyncProducer
+
+	return nil
+}
+
+func (k *Kafka) CreateConsumer() error {
+	consumer, err := sarama.NewConsumerFromClient(k.Client)
+	if err != nil {
+		return errors.ErrNewConsumerFromClient.ToError(err)
+	}
+
+	k.Consumer = consumer
+
+	partitionConsumer, err := k.Consumer.ConsumePartition("kafka", 0, sarama.OffsetNewest)
+	if err != nil {
+		return errors.ErrReceive.ToError(err)
+	}
+
+	k.PartitionConsumer = partitionConsumer
+
+	return nil
+}
+
+func (k *Kafka) Send(msg []byte) error {
 
 	proMsg := &sarama.ProducerMessage{
-		Topic:"kafka",
-		Key: sarama.StringEncoder("key"),
+		Topic: "kafka",
+		Key:   sarama.StringEncoder("key"),
 	}
 
 	proMsg.Value = sarama.ByteEncoder(msg)
 
-	partition, offset, err := syncProducer.SendMessage(proMsg)
-	if err != nil {
-		return errors.ErrSend.ToError(err)
-	}
+	k.AsyncProducer.Input() <- proMsg
+	//_, _, err := k.AsyncProducer.SendMessage(proMsg)
+	//if err != nil {
+	//	return errors.ErrSend.ToError(err)
+	//}
 
-	fmt.Println("partition: ", partition, "offset: ", offset)
+	//fmt.Println("partition: ", partition, "offset: ", offset)
 
 	return nil
 }
 
 func (k *Kafka) Receive() ([]byte, error) {
-	consumer, err := sarama.NewConsumerFromClient(k.Client)
-	if err != nil {
-		return nil, errors.ErrNewConsumerFromClient.ToError(err)
-	}
-	defer consumer.Close()
 
-	partitionConsumer, err := consumer.ConsumePartition("kafka", 0, sarama.OffsetOldest)
-	if err != nil {
-		return nil, errors.ErrReceive.ToError(err)
-	}
-
-	defer partitionConsumer.Close()
-
-	msg := <- partitionConsumer.Messages()
-
+	msg := <-k.PartitionConsumer.Messages()
 	return msg.Value, nil
 }
 
 func (k *Kafka) Disconnect() error {
+
+	if k.AsyncProducer != nil {
+		err := k.AsyncProducer.Close()
+		if err != nil {
+			return errors.ErrAsyncProducerClose.ToError(err)
+		}
+	}
+
+	if k.PartitionConsumer != nil {
+		err := k.PartitionConsumer.Close()
+		if err != nil {
+			return errors.ErrPartitionConsumerClose.ToError(err)
+		}
+	}
+
+	if k.Consumer != nil {
+		err := k.Consumer.Close()
+		if err != nil {
+			return errors.ErrConsumerClose.ToError(err)
+		}
+	}
+
 	err := k.Client.Close()
 	if err != nil {
 		return errors.ErrDisconnection.ToError(err)
@@ -96,9 +136,12 @@ func (k *Kafka) Disconnect() error {
 	return nil
 }
 
-func (k* Kafka) genConfig() *sarama.Config {
+func (k *Kafka) genConfig() *sarama.Config {
 
-	cfg := new(sarama.Config)
+	cfg := sarama.NewConfig()
+
+	//cfg.Net.MaxOpenRequests = 10
+
 	cfg.Producer.RequiredAcks = sarama.WaitForAll
 	cfg.Producer.Partitioner = sarama.NewRandomPartitioner
 	cfg.Producer.Return.Successes = true
@@ -108,4 +151,3 @@ func (k* Kafka) genConfig() *sarama.Config {
 
 	return cfg
 }
-

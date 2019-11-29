@@ -1,7 +1,7 @@
 {
   "kafka_mq": {
     "host": "localhost",
-    "port": 9999
+    "port": 9092
   },
   "rabbit_mq": {
     "host": "localhost",
