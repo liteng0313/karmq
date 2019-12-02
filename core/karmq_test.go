@@ -22,8 +22,8 @@ const URL_KAFKA = "localhost:9092"
 const PC_NAME = "kafka"
 const PC_NAME2 = "hello2"
 
-var category = types.MQ_KAFKA
-var url = ""
+var category = types.MQ_RABBIT
+var url = URL_RABBIT
 
 func TestNewKarmq(t *testing.T) {
 
@@ -187,6 +187,7 @@ func TestKarmq_Async_Receive(t *testing.T) {
 }
 
 func TestKarmq_Send_Receive(t *testing.T) {
+
 	karmq, _ := NewKarmq(category)
 	err := karmq.Connect(url)
 	if err != nil {
