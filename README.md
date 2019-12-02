@@ -50,3 +50,5 @@ General message queue middleware encapsulation, like kafka, rabbitmq, activemq a
 	err = producer.Send([]byte("quit"))
 
 	<-finish
+	
+   For more information, please see the karmq_test.go file in the  core directory !

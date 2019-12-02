@@ -151,28 +151,3 @@ func (rm *RabbitMQ) Disconnect() error {
 
 	return nil
 }
-
-func (rm *RabbitMQ) createChannel(isProducer bool) error {
-
-	//queue, err := channel.QueueDeclare(
-	//	rm.ProducerName,
-	//	false,
-	//	false,
-	//	false,
-	//	false,
-	//	nil,
-	//)
-	//if err != nil {
-	//	return errors.ErrRabbitQueueDeclare.ToError(err)
-	//}
-	//
-	//rm.Queue = &queue
-
-	//if isProducer {
-	//	rm.ProducerChannel = channel
-	//} else {
-	//	rm.ConsumerChannel = channel
-	//}
-
-	return nil
-}
