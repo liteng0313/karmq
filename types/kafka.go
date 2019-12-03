@@ -76,7 +76,7 @@ func (k *Kafka) CreateConsumer(name string) error {
 	}
 
 	k.Consumer = consumer
-	partitionConsumer, err := k.Consumer.ConsumePartition(k.ConsumerName, 0, sarama.OffsetNewest)
+	partitionConsumer, err := k.Consumer.ConsumePartition(k.ConsumerName, 0, sarama.OffsetOldest)
 	if err != nil {
 		return errors.ErrReceive.ToError(err)
 	}
