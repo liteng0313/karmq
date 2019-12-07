@@ -18,6 +18,8 @@ import (
 	"sync/atomic"
 )
 
+const MQ_ROCKET = "rocket_mq"
+
 type RocketMQ struct {
 	design.Base
 	URL          string

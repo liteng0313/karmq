@@ -18,6 +18,7 @@ import (
 const URL_RABBIT = "amqp://guest:guest@localhost:5672"
 const URL_ACTIVE = "localhost:60000"
 const URL_KAFKA = "localhost:9092"
+const URL_ROCKET = "localhost:9876"
 
 const PC_NAME = "kafka"
 const PC_NAME2 = "hello2"
@@ -32,6 +33,7 @@ func TestNewKarmq(t *testing.T) {
 		types.MQ_ACTIVE,
 		types.MQ_KAFKA,
 		types.MQ_RABBIT,
+		types.MQ_ROCKET,
 	}
 
 	for _, category := range categories {
