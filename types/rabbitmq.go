@@ -10,6 +10,7 @@ package types
 import (
 	"fmt"
 	"github.com/streadway/amqp"
+	"karmq/common"
 	"karmq/config"
 	"karmq/design"
 	"karmq/errors"
@@ -32,19 +33,19 @@ func NewRabbitMQ() *RabbitMQ {
 }
 
 func (rm *RabbitMQ) InitConfig(config *config.Configuration) {
-	rm.Config = &config.RabbitConfig
+	rm.Config = config.RabbitConfig
 }
 
 func (rm *RabbitMQ) Connect(url string) error {
 	if url == "" {
 		fmt.Printf("%s:%d\n", rm.Config.Host, rm.Config.Port)
-		//url = net.JoinHostPort(rm.Config.Host, strconv.Itoa(rm.Config.Port))
-		url = rm.Config.Host + ":" + strconv.Itoa(rm.Config.Port)
+		url = common.JoinHostPort(rm.Config.Host, strconv.Itoa(rm.Config.Port))
+		//url = rm.Config.Host + ":" + strconv.Itoa(rm.Config.Port)
 	}
 	fmt.Println("url: ", url)
 	connection, err := amqp.Dial(url)
 	if err != nil {
-		return errors.ErrConnection.ToError(err)
+		return errors.ErrConnection.JoinError(err)
 	}
 
 	rm.Connection = connection
@@ -57,7 +58,7 @@ func (rm *RabbitMQ) CreateProducer(name string) error {
 
 	channel, err := rm.Connection.Channel()
 	if err != nil {
-		return errors.ErrRabbitChannel.ToError(err)
+		return errors.ErrRabbitChannel.JoinError(err)
 	}
 
 	_, err = channel.QueueDeclare(
@@ -69,7 +70,7 @@ func (rm *RabbitMQ) CreateProducer(name string) error {
 		nil,
 	)
 	if err != nil {
-		return errors.ErrRabbitQueueDeclare.ToError(err)
+		return errors.ErrRabbitQueueDeclare.JoinError(err)
 	}
 	rm.ProducerChannel = channel
 
@@ -82,7 +83,7 @@ func (rm *RabbitMQ) CreateConsumer(name string) error {
 
 	channel, err := rm.Connection.Channel()
 	if err != nil {
-		return errors.ErrRabbitChannel.ToError(err)
+		return errors.ErrRabbitChannel.JoinError(err)
 	}
 
 	_, err = channel.QueueDeclare(
@@ -94,7 +95,7 @@ func (rm *RabbitMQ) CreateConsumer(name string) error {
 		nil,
 	)
 	if err != nil {
-		return errors.ErrRabbitQueueDeclare.ToError(err)
+		return errors.ErrRabbitQueueDeclare.JoinError(err)
 	}
 
 	rm.ConsumerChannel = channel
@@ -111,7 +112,7 @@ func (rm *RabbitMQ) CreateConsumer(name string) error {
 	rm.Delivery = msgs
 
 	if err != nil {
-		return errors.ErrReceive.ToError(err)
+		return errors.ErrReceive.JoinError(err)
 	}
 
 	return nil
@@ -130,7 +131,7 @@ func (rm *RabbitMQ) Send(msg []byte) error {
 		})
 
 	if err != nil {
-		return errors.ErrSend.ToError(err)
+		return errors.ErrSend.JoinError(err)
 	}
 
 	return nil
@@ -146,7 +147,7 @@ func (rm *RabbitMQ) Receive() ([]byte, error) {
 func (rm *RabbitMQ) Disconnect() error {
 	err := rm.Connection.Close()
 	if err != nil {
-		return errors.ErrDisconnection.ToError(err)
+		return errors.ErrDisconnection.JoinError(err)
 	}
 
 	return nil

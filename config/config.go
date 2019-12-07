@@ -1,5 +1,5 @@
 /**
- * @Description: 
+ * @Description:
  * @Version: 1.0.0
  * @Author: liteng
  * @Date: 2019-11-27 16:32
@@ -18,7 +18,7 @@ const (
 
 type CommonConfig struct {
 	Host string `json:"host"`
-	Port int `json:"port"`
+	Port int    `json:"port"`
 }
 
 type KafkaConfig struct {
@@ -33,10 +33,18 @@ type ActiveConfig struct {
 	CommonConfig
 }
 
+type RocketConfig struct {
+	CommonConfig
+	//ProducerConfig     *rocketmq.ProducerConfig
+	//PushConsumerConfig *rocketmq.PushConsumerConfig
+	//PullConsumerConfig *rocketmq.PullConsumerConfig
+}
+
 type Configuration struct {
-	KafkaConfig KafkaConfig `json:"kafka_mq"`
-	RabbitConfig RabbitConfig `json:"rabbit_mq"`
-	ActiveConfig ActiveConfig `json:"active_mq"`
+	KafkaConfig  *KafkaConfig  `json:"kafka_mq"`
+	RabbitConfig *RabbitConfig `json:"rabbit_mq"`
+	ActiveConfig *ActiveConfig `json:"active_mq"`
+	RocketConfig *RocketConfig `json:"rocket_mq"`
 }
 
 func LoadConfig(path string) (*Configuration, error) {
@@ -54,7 +62,3 @@ func LoadConfig(path string) (*Configuration, error) {
 
 	return config, err
 }
-
-
-
-

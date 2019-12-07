@@ -33,7 +33,7 @@ func NewKafka() *Kafka {
 }
 
 func (k *Kafka) InitConfig(config *config.Configuration) {
-	k.Config = &config.KafkaConfig
+	k.Config = config.KafkaConfig
 }
 
 func (k *Kafka) Connect(url string) error {
@@ -46,7 +46,7 @@ func (k *Kafka) Connect(url string) error {
 
 	client, err := sarama.NewClient([]string{url}, cfg)
 	if err != nil {
-		return errors.ErrConnection.ToError(err)
+		return errors.ErrConnection.JoinError(err)
 	}
 
 	k.Client = client
@@ -59,7 +59,7 @@ func (k *Kafka) CreateProducer(name string) error {
 	k.ProducerName = name
 	asyncProducer, err := sarama.NewAsyncProducerFromClient(k.Client)
 	if err != nil {
-		return errors.ErrNewProducerFromClient.ToError(err)
+		return errors.ErrNewProducerFromClient.JoinError(err)
 	}
 	k.AsyncProducer = asyncProducer
 
@@ -72,13 +72,13 @@ func (k *Kafka) CreateConsumer(name string) error {
 
 	consumer, err := sarama.NewConsumerFromClient(k.Client)
 	if err != nil {
-		return errors.ErrConnection.ToError(err)
+		return errors.ErrConnection.JoinError(err)
 	}
 
 	k.Consumer = consumer
 	partitionConsumer, err := k.Consumer.ConsumePartition(k.ConsumerName, 0, sarama.OffsetOldest)
 	if err != nil {
-		return errors.ErrReceive.ToError(err)
+		return errors.ErrReceive.JoinError(err)
 	}
 
 	k.PartitionConsumer = partitionConsumer
@@ -106,7 +106,7 @@ func (k *Kafka) Send(msg []byte) error {
 
 	//_, _, err := k.AsyncProducer.SendMessage(proMsg)
 	//if err != nil {
-	//	return errors.ErrSend.ToError(err)
+	//	return errors.ErrSend.JoinError(err)
 	//}
 
 	//fmt.Println("partition: ", partition, "offset: ", offset)
@@ -125,27 +125,27 @@ func (k *Kafka) Disconnect() error {
 
 	err := k.Client.Close()
 	if err != nil {
-		return errors.ErrDisconnection.ToError(err)
+		return errors.ErrDisconnection.JoinError(err)
 	}
 
 	if k.AsyncProducer != nil {
 		err := k.AsyncProducer.Close()
 		if err != nil {
-			return errors.ErrAsyncProducerClose.ToError(err)
+			return errors.ErrAsyncProducerClose.JoinError(err)
 		}
 	}
 
 	if k.PartitionConsumer != nil {
 		err := k.PartitionConsumer.Close()
 		if err != nil {
-			return errors.ErrPartitionConsumerClose.ToError(err)
+			return errors.ErrPartitionConsumerClose.JoinError(err)
 		}
 	}
 
 	if k.Consumer != nil {
 		err := k.Consumer.Close()
 		if err != nil {
-			return errors.ErrConsumerClose.ToError(err)
+			return errors.ErrConsumerClose.JoinError(err)
 		}
 	}
 

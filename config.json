@@ -10,5 +10,9 @@
   "active_mq": {
     "host": "localhost",
     "port": 60000
+  },
+  "rocket_mq": {
+    "host": "localhost",
+    "port": 9876
   }
 }

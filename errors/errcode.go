@@ -37,6 +37,12 @@ const (
 
 	// active mq
 	ErrSubscribe ErrCode = 44001
+
+	// rocket mq
+	ErrNewProducer     ErrCode = 45001
+	ErrNewPushConsumer ErrCode = 45002
+	ErrNewPullConsumer ErrCode = 45003
+	ErrConsumerScribe  ErrCode = 45004
 )
 
 var ErrMap = map[ErrCode]string{
@@ -63,12 +69,17 @@ var ErrMap = map[ErrCode]string{
 	ErrPartitionConsumerClose: "Kafka Partition Consumer Error",
 
 	ErrSubscribe: "ActiveMQ Subscribe Error",
+
+	ErrNewProducer:     "RocketMQ New Producer Error",
+	ErrNewPushConsumer: "RocketMQ New PushConsumer Error",
+	ErrNewPullConsumer: "RocketMQ New PullConsumer Error",
+	ErrConsumerScribe:  "RocketMQ Consumer Scribe Error",
 }
 
 func (code ErrCode) Error() string {
 	return ErrMap[code]
 }
 
-func (code ErrCode) ToError(detail error) error {
+func (code ErrCode) JoinError(detail error) error {
 	return fmt.Errorf("%s: %s\n", code.Error(), detail.Error())
 }

@@ -10,10 +10,10 @@ package types
 import (
 	"fmt"
 	"github.com/go-stomp/stomp"
+	"karmq/common"
 	"karmq/config"
 	"karmq/design"
 	"karmq/errors"
-	"net"
 	"strconv"
 )
 
@@ -31,19 +31,19 @@ func NewActiveMQ() *ActiveMQ {
 }
 
 func (am *ActiveMQ) InitConfig(config *config.Configuration) {
-	am.Config = &config.ActiveConfig
+	am.Config = config.ActiveConfig
 }
 
 func (am *ActiveMQ) Connect(url string) error {
 	if url == "" {
-		url = net.JoinHostPort(am.Config.Host, strconv.Itoa(am.Config.Port))
+		url = common.JoinHostPort(am.Config.Host, strconv.Itoa(am.Config.Port))
 	}
 
 	fmt.Println("active mq url: ", url)
 
 	conn, err := stomp.Dial("tcp", url)
 	if err != nil {
-		return errors.ErrConnection.ToError(err)
+		return errors.ErrConnection.JoinError(err)
 	}
 
 	am.Connection = conn
@@ -60,7 +60,7 @@ func (am *ActiveMQ) CreateConsumer(name string) error {
 	am.ConsumerName = name
 	sub, err := am.Connection.Subscribe(am.ConsumerName, stomp.AckAuto)
 	if err != nil {
-		return errors.ErrReceive.ToError(err)
+		return errors.ErrReceive.JoinError(err)
 	}
 
 	am.Subscription = sub
@@ -71,7 +71,7 @@ func (am *ActiveMQ) CreateConsumer(name string) error {
 func (am *ActiveMQ) Send(msg []byte) error {
 	err := am.Connection.Send(am.ProducerName, "text/plain", msg)
 	if err != nil {
-		return errors.ErrReceive.ToError(err)
+		return errors.ErrReceive.JoinError(err)
 	}
 
 	return nil
@@ -87,7 +87,7 @@ func (am *ActiveMQ) Receive() ([]byte, error) {
 func (am *ActiveMQ) Disconnect() error {
 	err := am.Connection.Disconnect()
 	if err != nil {
-		return errors.ErrDisconnection.ToError(err)
+		return errors.ErrDisconnection.JoinError(err)
 	}
 
 	return nil

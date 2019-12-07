@@ -28,7 +28,7 @@ func NewEmptyKarmq() *Karmq {
 func NewKarmq(category string) (*Karmq, error) {
 
 	if category != types.MQ_RABBIT && category != types.MQ_ACTIVE && category != types.MQ_KAFKA {
-		return nil, ke.ErrInvalidType.ToError(fmt.Errorf(
+		return nil, ke.ErrInvalidType.JoinError(fmt.Errorf(
 			"Please choose one of them as the input parameter: \"%s\" \"%s\" \"%s\"\n",
 			types.MQ_RABBIT, types.MQ_KAFKA, types.MQ_ACTIVE))
 	}
@@ -37,7 +37,7 @@ func NewKarmq(category string) (*Karmq, error) {
 
 	configuration, err := config.LoadConfig(config.CONFIG_FILE_PATH)
 	if err != nil {
-		return nil, ke.ErrConfiguration.ToError(err)
+		return nil, ke.ErrConfiguration.JoinError(err)
 	}
 
 	k.Config = configuration
