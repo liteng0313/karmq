@@ -16,15 +16,17 @@ import (
 )
 
 const URL_RABBIT = "amqp://guest:guest@localhost:5672"
+const URL_RABBIT2 = "amqp://admin:gep..GEP@39.106.59.251:5672/gep_vhost"
 const URL_ACTIVE = "localhost:60000"
 const URL_KAFKA = "localhost:9092"
 const URL_ROCKET = "localhost:9876"
 
-const PC_NAME = "kafka"
+const PC_NAME = "hello1"
 const PC_NAME2 = "hello2"
+const TestName1 = "topic"
 
 var category = types.MQ_RABBIT
-var url = URL_RABBIT
+var url = URL_RABBIT2
 
 func TestNewKarmq(t *testing.T) {
 
@@ -47,7 +49,6 @@ func TestNewKarmq(t *testing.T) {
 			fmt.Printf("%s:%d\n", karmq.Config.RabbitConfig.Host, karmq.Config.RabbitConfig.Port)
 		}
 	}
-
 }
 
 func TestKarmq_Connect(t *testing.T) {
@@ -122,18 +123,35 @@ func TestKarmq_Send(t *testing.T) {
 
 	producer, err := karmq.GenerateProducer(PC_NAME)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatal("generate producer error: ", err)
 	}
 
-	fmt.Println(producer)
+	//fmt.Println("producer:", producer)
+	//
+	//actualProducer, ok := producer.(*types.RocketMQ)
+	//if !ok {
+	//	t.Fatal("not get rocket mq producer")
+	//}
+	//
+	//err = actualProducer.Producer.Start()
+	//if err != nil {
+	//	t.Fatal("actual producer start error")
+	//}
 
 	err = producer.Send([]byte("hello world 1"))
 	err = producer.Send([]byte("hello world 2"))
 	err = producer.Send([]byte("hello world 3"))
-	err = producer.Send([]byte("quit"))
+	err = producer.Send([]byte("hello world 4"))
+	err = producer.Send([]byte("hello world 5"))
+
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	//err = actualProducer.Producer.Shutdown()
+	//if err != nil {
+	//	t.Fatal("actual producer shutdown error:", err)
+	//}
 }
 
 func TestKarmq_Receive(t *testing.T) {

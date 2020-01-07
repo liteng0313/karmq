@@ -50,24 +50,13 @@ func (rm *RocketMQ) Connect(url string) error {
 		url = common.JoinHostPort(rm.Config.Host, strconv.Itoa(rm.Config.Port))
 	}
 
-	fmt.Println("rocket mq url:", url)
+	fmt.Println("rocketmq url:", url)
 	rm.URL = url
 
 	return nil
 }
 
 func (rm *RocketMQ) Disconnect() error {
-	if rm.Producer != nil {
-		return rm.Producer.Shutdown()
-	}
-
-	if rm.PushConsumer != nil {
-		return rm.PushConsumer.Shutdown()
-	}
-
-	if rm.PullConsumer != nil {
-		return rm.PullConsumer.Shutdown()
-	}
 
 	return nil
 }
@@ -78,7 +67,17 @@ func (rm *RocketMQ) CreateProducer(name string) error {
 	pConfig := &rocketmq.ProducerConfig{}
 	pConfig.GroupID = rm.ProducerName + "01"
 	pConfig.NameServer = rm.URL
-	pConfig.ProducerModel = rocketmq.OrderlyProducer
+	pConfig.ProducerModel = rocketmq.CommonProducer
+	pConfig.InstanceName = "testProducer"
+	pConfig.LogC = &rocketmq.LogConfig{
+		Path:     "/rocketmq/log",
+		FileNum:  16,
+		FileSize: 1 << 20,
+		Level:    rocketmq.LogLevelDebug}
+
+	pConfig.CompressLevel = 4
+	pConfig.SendMsgTimeout = 5
+	pConfig.MaxMessageSize = 1024
 
 	producer, err := rocketmq.NewProducer(pConfig)
 	if err != nil {
@@ -87,7 +86,7 @@ func (rm *RocketMQ) CreateProducer(name string) error {
 
 	rm.Producer = producer
 
-	return rm.Producer.Start()
+	return nil
 }
 
 func (rm *RocketMQ) CreateConsumer(name string) error {
@@ -121,7 +120,7 @@ func (rm *RocketMQ) CreateConsumer(name string) error {
 
 	rm.Msgs = strings
 
-	return rm.PushConsumer.Start()
+	return nil
 
 }
 
@@ -131,8 +130,8 @@ func (rm *RocketMQ) Subscribe(topic string) (chan string, error) {
 	}
 
 	ch := make(chan interface{})
-	var count = int64(100)
-	msgs := make(chan string, 100)
+	var count = int64(10)
+	msgs := make(chan string, 10)
 
 	err := rm.PushConsumer.Subscribe(topic, "*", func(msg *rocketmq.MessageExt) rocketmq.ConsumeStatus {
 		msgs <- msg.Body
@@ -162,17 +161,50 @@ func (rm *RocketMQ) Send(msg []byte) error {
 		Body:  string(msg),
 	}
 
-	s := &messageQueueSelector{}
-	result, err := rm.Producer.SendMessageOrderly(msgs, s, nil, 1)
+	//result, err := rm.Producer.SendMessageOrderlyByShardingKey(msgs, "hello")
+	err := rm.Producer.SendMessageOneway(msgs)
 	if err != nil {
 		return errors.ErrSend.JoinError(err)
 	}
 
-	fmt.Println("send result: ", result)
+	//fmt.Println(result)
+
 	return nil
 }
 
 func (rm *RocketMQ) Receive() ([]byte, error) {
 	str := <-rm.Msgs
 	return []byte(str), nil
+}
+
+func (rm *RocketMQ) Start() error {
+	if rm.Producer != nil {
+		return rm.Producer.Start()
+	}
+
+	if rm.PushConsumer != nil {
+		return rm.PushConsumer.Start()
+	}
+
+	if rm.PullConsumer != nil {
+		return rm.PullConsumer.Start()
+	}
+
+	return nil
+}
+
+func (rm *RocketMQ) Shutdown() error {
+	if rm.Producer != nil {
+		return rm.Producer.Shutdown()
+	}
+
+	if rm.PushConsumer != nil {
+		return rm.PushConsumer.Shutdown()
+	}
+
+	if rm.PullConsumer != nil {
+		return rm.PullConsumer.Shutdown()
+	}
+
+	return nil
 }

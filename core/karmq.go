@@ -8,12 +8,18 @@
 package core
 
 import (
-	"fmt"
 	"karmq/config"
 	"karmq/design"
 	ke "karmq/errors"
 	"karmq/types"
 )
+
+var CATEGORIES = []string{
+	types.MQ_ROCKET,
+	types.MQ_RABBIT,
+	types.MQ_ACTIVE,
+	types.MQ_KAFKA,
+}
 
 type Karmq struct {
 	Type       string
@@ -27,11 +33,10 @@ func NewEmptyKarmq() *Karmq {
 
 func NewKarmq(category string) (*Karmq, error) {
 
-	if category != types.MQ_RABBIT && category != types.MQ_ACTIVE && category != types.MQ_KAFKA {
-		return nil, ke.ErrInvalidType.JoinError(fmt.Errorf(
-			"Please choose one of them as the input parameter: \"%s\" \"%s\" \"%s\"\n",
-			types.MQ_RABBIT, types.MQ_KAFKA, types.MQ_ACTIVE))
+	if !IsValid(category) {
+		return nil, ke.ErrInvalidType
 	}
+
 	k := NewEmptyKarmq()
 	k.Type = category
 
@@ -55,6 +60,8 @@ func (k *Karmq) parseType(category string) {
 		k.Middleware = types.NewActiveMQ()
 	case types.MQ_KAFKA:
 		k.Middleware = types.NewKafka()
+	case types.MQ_ROCKET:
+		k.Middleware = types.NewRocketMQ()
 	}
 
 	k.Middleware.InitConfig(k.Config)
@@ -95,4 +102,14 @@ func (k *Karmq) GenerateConsumer(name string) (design.Consumer, error) {
 
 func (k *Karmq) DisConnect() error {
 	return k.Middleware.Disconnect()
+}
+
+func IsValid(category string) bool {
+
+	for _, c := range CATEGORIES {
+		if category == c {
+			return true
+		}
+	}
+	return false
 }
